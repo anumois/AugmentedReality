@@ -1,0 +1,103 @@
+/*
+ * Code for Client process in ARapp
+ */
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
+#include "client.h"
+
+#define TRUE 1
+#define FALSE 0
+//Functions
+
+int ValidateMsg(struct MsgTemplate *msgbuf);
+struct MsgTemplate *FillMsg(uint8_t *array);
+
+void *ClientThread(void *nSockfd)
+{
+  int numbytes;
+  int sockfd = *(int *)nSockfd;
+  struct MsgTemplate msgbuf;
+  printf("Client initialized\n");
+  while(1)
+    {
+      if((numbytes = recv(sockfd, (uint8_t *)&msgbuf, sizeof(struct MsgTemplate), 0)) == -1)
+	{
+	  fprintf(stderr,"recv\n");
+	  break;
+	}
+      printf("received something\n");
+      DEBUGprintMsg(&msgbuf);
+      if(!ValidateMsg(&msgbuf)) continue;
+
+      processMsg(msgbuf);
+      DEBUGprintItem();
+      
+    }
+}
+
+void DEBUGprintMsg(struct MsgTemplate *msg)
+{
+  int i;
+  for(i = 0; i < NUMBER_OF_MARKERS; i++)
+    {
+      printf("Valid%d: %d\n",i, msg->Valid[i]);
+      printf("GiveScore%d: %d\n", i, msg->GiveScore[i]);
+    }
+}
+
+int ValidateMsg(struct MsgTemplate *msgbuf)
+{
+  /*
+  int i;
+  uint16_t ref = 0;
+  for(i = 0;
+      i < sizeof(struct MsgTemplate) / sizeof(uint16_t);
+      i++)
+      ref = ref + *((uint16_t *)msgbuf + i);
+
+  if(ref != CHECKSUM_MAGIC)
+    return FALSE;
+  
+    else */
+  return TRUE;
+}
+
+struct MsgTemplate *FillMsg(uint8_t *array)
+{
+  int i;
+  uint16_t ref = 0;
+  uint16_t checksum;
+  struct MsgTemplate *retMsg = (struct MsgTemplate *)malloc(sizeof(struct MsgTemplate));
+
+  retMsg->checksum = 0;
+  for(i = 0; i < NUMBER_OF_MARKERS; i++)
+    {
+      if(array[i] == 1)
+	retMsg->Valid[i] = 1;
+      else
+	retMsg->Valid[i] = 0;
+      retMsg->GiveScore[i] = 1;
+    }
+
+  for(i = 0;
+      i < sizeof(struct MsgTemplate) / sizeof(uint16_t);
+      i++)
+    {
+      ref = ref + *((uint16_t *)retMsg + i);
+    }
+
+  checksum = (uint16_t)CHECKSUM_MAGIC - ref;
+  retMsg->checksum = checksum;
+
+  return retMsg;
+}
+

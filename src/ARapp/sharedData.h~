@@ -1,0 +1,15 @@
+#ifndef SHARED_DATA_H
+#define SHARED_DATA_H
+
+#define NUMBER_OF_MARKERS 2
+
+struct sharedItem
+{
+  uint16_t marker_valid[NUMBER_OF_MARKERS];
+  int score;
+};
+
+void sema_down(void);
+void sema_up(void);
+
+#endif

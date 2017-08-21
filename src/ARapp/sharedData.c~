@@ -1,0 +1,40 @@
+#include <stdio.h>
+#include "sharedData.h"
+
+static struct sharedItem Resource;
+static int semaphore;
+
+void sema_init()
+{
+  int i;
+  semaphore = 1;
+
+  for(i = 0; i < NUMBER_OF_MARKERS; i++)
+    {
+      Resource.marker_valid[i] = 1;
+    }
+}
+
+void sema_down()
+{
+  while(semaphore < 1);
+
+  semaphore--;
+}
+
+void sema_up()
+{
+  semaphore++;
+}
+
+void processMsg(struct MsgTemplate msgbuf)
+{
+  int i;
+  sema_down();
+  for(i = 0; i < NUMBER_OF_MARKERS; i++)
+    {
+      marker_valid[i] = msgbuf.Valid[i];
+      if(GiveScore[i] == 1) score++;
+    }
+  sema_up();
+}

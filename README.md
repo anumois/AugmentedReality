@@ -38,3 +38,5 @@ sudo ln -s /usr/lib64/libglc-play.so.0 /usr/lib/libglc-play.so
 sudo ln -s /usr/lib64/libpacketstream.so.0 /usr/lib/libpacketstream.so.0
 
 sudo ln -s /usr/lib64/libpacketstream.so.0 /usr/lib/libpacketstream.so
+
+CFLAG= -O3 -fPIC -march=core2 -DHAVE_NFT=1 -I/usr/include/x86_64-linux-gnu -pthread -I/usr/include/gstreamer-0.10 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/libxml2 -I$(INC_DIR)

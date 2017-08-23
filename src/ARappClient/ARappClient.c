@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 // Headers for Networking
 
@@ -134,36 +135,35 @@ static int gShowHelp = 0; //if 1 show help, 0 hide
 
 static int gDrawRotate = TRUE;
 static float gDrawRotateAngle = 0;
-static float ARC_RotateAngle = 0;
 
-static float ARC_fSize = 40.0f;
+static float ARC_fSize = 40.0f;//default size of the cube
 static float ARC_Ball_Size = 30;
 static float ARC_Ball_Dis = 10;
+static float ARC_Ball_Dis_Steal = 1;
+static float ARC_Ball_Dis_Pass = 10;
 
 static int get;
-static int miss;
-static int bounce = 0;
+static int ballPosition[2] = {0, 0}; //index 0: team A(me), index 1: team B
+static int miss = 2; //1: you missed, 0: you scored
+static int bounce = 0; //1: bounce the ball(animation)
 
+//Text
 static int count = 0;
 static int points = 0;
-time_t start, end;
 struct timeval before, after;
+static int first_start = 7;
 
-static float reshapeScale_w = 1;
+static float reshapeScale_w = 1; //scale to reshape the objects proportional to window size
 static float reshapeScale_h = 1;
-
-static float key_duration = 0.0f;
-
-static int AC_Sockfd;
 
 int main(int argc, char **argv)
 {
+  int AC_Sockfd;
   pthread_t AC_Tid;
 
   char glutGamemode[32];
   char cparam_name[] = "camera_para.dat";
-  //  char vconf[] = "v4l2src device=/dev/video1 use-fixed-fps=false ! ffmpegcolorspace ! video/x-raw-rgb,bpp=24,framerate=30/1 ! identity name=artoolkit sync=true ! fakesink";
-  char vconf[] = "";
+  char vconf[] = "udpsrc port=5000 ! application/x-rtp, encoding-name=JPEG, payload=96 ! rtpjpegdepay ! jpegdec ! ffmpegcolorspace ! video/x-raw-rgb,bpp=24 ! identity name=artoolkit sync=true ! fakesink";//"v4l2src device=/dev/video0 use-fixed-fps=false ! ffmpegcolorspace ! video/x-raw-rgb,bpp=24,framerate=30/1 ! identity name=artoolkit sync=true ! fakesink";
   char patt_name_gen1[] = "generator1.patt";
   char patt_name_gen2[] = "generator2.patt";
   char patt_name_gen3[] = "generator3.patt";
@@ -181,7 +181,6 @@ int main(int argc, char **argv)
       return AC_FALSE;
     }
 
-  ACSD_Init();
   // Initialization Step
   if(!ACS_Network_Init(argv[1], &AC_Sockfd))
     {
@@ -189,8 +188,9 @@ int main(int argc, char **argv)
       return AC_FALSE;
     }
 
+  ACSD_Init();
   glutInit(&argc, argv);
-
+gettimeofday(&before,NULL);
   // Video Setup
   if(!ACS_SetupCamera(cparam_name, vconf, &gCparamLT, &gARHandle, &gAR3DHandle))
     {
@@ -279,12 +279,9 @@ static void cleanup(void)
 
 static void Timer(int value)
 {
-  ARC_RotateAngle = (ARC_RotateAngle + 10);
-  if (ARC_RotateAngle > 360)
-    ARC_RotateAngle -= 360;
-
-  ARC_fSize += 2;
-  
+  if(keyboard_input == 'o'){
+    first_start -= 1;
+  }
   glutPostRedisplay();
   glutTimerFunc(1000, Timer, 1);
 }
@@ -317,7 +314,7 @@ static void Display(void)
 {
   ARdouble p[16];
   ARdouble m[16];
-  int found = AC_FALSE;
+
   glDrawBuffer(GL_BACK);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -352,6 +349,10 @@ static void Display(void)
 
   glLoadIdentity();
 
+  if(keyboard_input != 'o' && first_start > 0){
+    glutSwapBuffers();
+    return;
+  }
   if (gPatt_found_post1)
     {
       arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_post1,
@@ -375,8 +376,7 @@ static void Display(void)
 	    }
 	  else
 	    {
-	      ACM_Shoot(1,AC_Sockfd);
-	      //ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
+	      ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
 	    }
 	}
     }
@@ -404,8 +404,7 @@ static void Display(void)
 	    }
 	  else
 	    {
-	      ACM_Shoot(2, AC_Sockfd);
-	      //ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
+	      ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
 	    }
 	}
     }
@@ -422,23 +421,14 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
-      ACSD_Release_Lock();
-
-      if(found)
+      if(keyboard_input == 'g')
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
 	}
-      if(keyboard_input == 'g')
-	{
-	  ACM_Get(1, AC_Sockfd);
-	}
-      found = AC_FALSE;
     }
 
   if (gPatt_found_gen2)
@@ -453,23 +443,14 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
-      ACSD_Release_Lock();
-
-      if(found)
+      if(keyboard_input == 'g')
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
 	}
-      if(keyboard_input == 'g')
-	{
-	  ACM_Get(2, AC_Sockfd);
-	}
-      found = AC_FALSE;
     }
 
   if (gPatt_found_gen3)
@@ -484,23 +465,14 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
-      ACSD_Release_Lock();
-
-      if(found)
+      if(keyboard_input == 'g')
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
 	}
-      if(keyboard_input == 'g')
-	{
-	  ACM_Get(3, AC_Sockfd);
-	}
-      found = AC_FALSE;
     }
 
   if (gPatt_found_gen4)
@@ -515,54 +487,17 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
-      ACSD_Release_Lock();
-
-      if(found)
+      if(keyboard_input == 'g')
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
 	}
-      if(keyboard_input == 'g')
-	{
-	  ACM_Get(4, AC_Sockfd);
-	}
-      found = AC_FALSE;
     }
 
-   if (gPatt_found_player1)
-    {
-      arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player1,
-		       m,
-		       VIEW_SCALEFACTOR);
-
-      #ifdef ARDOUBLE_IS_FLOAT
-      glLoadMatrixf(m);
-      #else
-      glLoadMatrixd(m);
-      #endif
-
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_PLAYER1];
-      ACSD_Release_Lock();
-
-      if(found)
-	{
-	  ACF_DrawBall(ARC_Ball_Size, &get);
-	}
-
-      if(keyboard_input == 't')
-	{
-	  ACM_Tackle(1, ACS_Sockfd);
-	}
-      found = AC_FALSE;
-    }
-
-   if (gPatt_found_player2)
+  if (gPatt_found_player2)
     {
       arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player2,
 		       m,
@@ -574,23 +509,13 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_PLAYER2];
-      ACSD_Release_Lock();
-
-      if(found)
+      if(keyboard_input == 'p')
 	{
-	  ACF_DrawBall(ARC_Ball_Size, &get);
+	  ACF_DrawPass(ARC_Ball_Size, &ARC_Ball_Dis_Pass);
 	}
-
-      if(keyboard_input == 't')
-	{
-	  ACM_Tackle(2, ACS_Sockfd);
-	}
-      found = AC_FALSE;
     }
 
-   if (gPatt_found_player3)
+  if (gPatt_found_player3)
     {
       arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player3,
 		       m,
@@ -602,23 +527,13 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_PLAYER3];
-      ACSD_Release_Lock();
-
-      if(found)
-	{
-	  ACF_DrawBall(ARC_Ball_Size, &get);
-	}
-
       if(keyboard_input == 't')
 	{
-	  ACM_Tackle(3, ACS_Sockfd);
+	  ACF_DrawSteal(ARC_Ball_Size, &ARC_Ball_Dis_Steal);
 	}
-      found = AC_FALSE;
     }
 
-   if (gPatt_found_player4)
+  if (gPatt_found_player4)
     {
       arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player4,
 		       m,
@@ -630,25 +545,15 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      ACSD_Acquire_Lock();
-      found = ACSD_Shared.Ball_Holder[AC_PLAYER4];
-      ACSD_Release_Lock();
-
-      if(found)
-	{
-	  ACF_DrawBall(ARC_Ball_Size, &get);
-	}
-
       if(keyboard_input == 't')
 	{
-	  ACM_Tackle(4, ACS_Sockfd);
+	  ACF_DrawSteal(ARC_Ball_Size, &ARC_Ball_Dis_Steal);
 	}
-      found = AC_FALSE;
     }
 
   glDisable(GL_LIGHTING);
   ACF_DrawCrosshair(windowWidth, windowHeight,
-		    gPatt_found_post1, gPatt_found_post2);
+		    gPatt_found_post1, gPatt_found_post2, gPatt_found_player2, gPatt_found_player3, gPatt_found_player4);
 
   //Any 2D overlays go here
 
@@ -659,12 +564,13 @@ static void Display(void)
   glLoadIdentity();
   glDisable(GL_LIGHTING);
   glDisable(GL_DEPTH_TEST);
+	
   ACF_DisplayText(reshapeScale_w,
 		  reshapeScale_h,
 		  gShowHelp,
 		  get,
-		  windowWidth, windowHeight, miss,
-		  gPatt_found_post1, gPatt_found_post2);
+		  windowWidth, windowHeight, miss, first_start,
+		  gPatt_found_post1, gPatt_found_post2, gPatt_found_player2, gPatt_found_player3, gPatt_found_player4, keyboard_input, before, after);
   glutSwapBuffers();
 }
 		      
@@ -681,13 +587,7 @@ static void mainLoop(void)
   // Find out how long since mainLoop() last ran
   ms = glutGet(GLUT_ELAPSED_TIME);
   s_elapsed = (float)(ms - ms_prev) * 0.001f;
-  key_duration += (float)(ms - ms_prev) * 0.001f;
-  if(key_duration > 1.0f) //Once pressed Key is available for 1 second
-    {
-      key_duration = 0;
-      keyboard_input = ' ';
-    }
-  if(s_elapsed < 0.2f) return; //Don't update more often than 100 Hz
+  if(s_elapsed < 0.01f) return; //Don't update more often than 100 Hz
 
   ms_prev = ms;
 
@@ -811,12 +711,7 @@ static void mainLoop(void)
 	  }
       }
 
-    fprintf(stderr,
-	    "Coordinate %f %f %f\n",
-	    gPatt_trans_gen1[0][3],
-	    gPatt_trans_gen1[1][3],
-	    gPatt_trans_gen1[2][3]);
-
+    
     //Get the transformation between the marker and the real camera into gPatt_trans
     
     if(gen1 != -1)
@@ -993,14 +888,10 @@ static void mainLoop(void)
 
 static void Keyboard(unsigned char key, int x, int y)
 {
-  key_duration = 0.0f;
   switch(key)
     {
     case 'a':
       keyboard_input = 'a';
-      break;
-    case 't':
-      keyboard_input = 't';
       break;
     case 's':
       keyboard_input = 's';
@@ -1025,6 +916,17 @@ static void Keyboard(unsigned char key, int x, int y)
       keyboard_input = 'h';
       gShowHelp++;
       if(gShowHelp > 1) gShowHelp = 0;
+      break;
+    case 't':
+      keyboard_input = 't';
+      ballPosition[0] = ~ballPosition[0];
+      ballPosition[1] = ~ballPosition[1];
+      break;
+    case 'p':
+      keyboard_input = 'p';
+      break;
+    case 'o':
+      keyboard_input = 'o';
       break;
     case 'q':
     case 0x1B:

@@ -10,7 +10,6 @@
 
 #include "ACFigures.h"
 #include "ARappClient.h"
-#include "ACSharedData.h"
 
 // For Drawing
 
@@ -21,6 +20,8 @@
 
 #include <stdio.h>
 #include <math.h>
+
+static int points = 0;
 
 void ACF_DrawCube(float gDrawRotateAngle, float fSize)
 {
@@ -46,7 +47,8 @@ void ACF_DrawCube(float gDrawRotateAngle, float fSize)
     {3, 0, 4, 7},
     {1, 2, 6, 5},
     {4, 5, 6, 7} };
-
+  
+  glLineWidth(1.0);
   glPushMatrix();
   glRotatef(gDrawRotateAngle, 1.0f, 1.0f, 1.0f);
 
@@ -95,7 +97,7 @@ void ACF_RenderText(int *font_id, char *family, char *face,
 
   glColor3f(r, g, b);
   glcRotate(angle);
-
+  //origin is upper right corner
   glRasterPos2f(windowWidth -x, windowHeight - y);
 
   glcRenderString(text);
@@ -104,8 +106,8 @@ void ACF_RenderText(int *font_id, char *family, char *face,
 void ACF_DisplayText(float reshapeScale_w,
 		     float reshapeScale_h,
 		     int gShowHelp, int get,
-		     int windowWidth, int windowHeight, int miss,
-		     int gPatt_found_post1, int gPatt_found_post2)
+		     int windowWidth, int windowHeight, int miss, int first_start,
+		     int gPatt_found_post1, int gPatt_found_post2, int gPatt_found_player2, int gPatt_found_player3, int gPatt_found_player4, int keyboard_input, struct timeval before, struct timeval after)
 {
   char *points_display_A = (char *)malloc(30);
   char *points_display_B = (char *)malloc(30);
@@ -115,7 +117,53 @@ void ACF_DisplayText(float reshapeScale_w,
   int ball_font;
   int point_font_A, point_font_B;
   int score_font, timer_font, help_font;
-  float scale = (reshapeScale_w + reshapeScale_h) / (float) 2;
+  int steal_font, player_font, first_start_font;
+  
+  char * start_timer = (char *)malloc(10);
+  gettimeofday(&after,NULL);
+	
+  sprintf(start_timer, "%d", first_start);
+  if(keyboard_input == 'o'){
+    if(first_start >= 6){
+       ACF_RenderText(&first_start_font,
+		     "Helvetica",
+		     "Bold",
+		     150 * reshapeScale_w,
+		     1.0, 1.0, 1.0,
+		     1400 * reshapeScale_w,
+		     300 * reshapeScale_h,
+		     "GET READY!!!", 0,
+		     windowWidth, windowHeight);
+       return;
+    }
+    else if(first_start > 0 && first_start <= 6){
+       ACF_RenderText(&first_start_font,
+		     "Helvetica",
+		     "Bold",
+		     180 * reshapeScale_w,
+		     1.0, 1.0, 1.0,
+		     1000 * reshapeScale_w,
+		     300 * reshapeScale_h,
+		     start_timer, 0,
+		     windowWidth, windowHeight);
+       return;
+    }
+    else if(first_start > -1 && first_start <= 0){
+       ACF_RenderText(&first_start_font,
+		     "Helvetica",
+		     "Bold",
+		     150 * reshapeScale_w,
+		     1.0, 1.0, 1.0,
+		     1400 * reshapeScale_w,
+		     300 * reshapeScale_h,
+		     "GET START!!!", 0,
+		     windowWidth, windowHeight);
+       //start the timer
+	printf("im here\n");
+       //gettimeofday(&before,NULL);
+       return;
+    }
+  }
 
   ACF_DrawBackground(430 * reshapeScale_w,
 		     250 * reshapeScale_h,
@@ -133,13 +181,13 @@ void ACF_DisplayText(float reshapeScale_w,
 		     600 * reshapeScale_w,
 		     0,
 		     windowWidth, windowHeight);
-
+  //ball text rendering for team B
   if(get != 'y')
     {
       glColor3f(1.0, 1.0, 0.0);
       ACF_RenderText(&ball_font,
 		     "Helvetica",
-		     "bold",
+		     "Bold",
 		     50 * reshapeScale_w,
 		     1.0, 1.0, 0.0,
 		     250 * reshapeScale_w,
@@ -150,13 +198,13 @@ void ACF_DisplayText(float reshapeScale_w,
 			   915 * reshapeScale_h,
 			   25  * reshapeScale_w);
     }
-
+  //ball text rendering for team A
   else
     {
       glColor3f(1.0, 1.0, 0.0);
       ACF_RenderText(&ball_font,
 		     "Helvetica",
-		     "bold",
+		     "Bold",
 		     50 * reshapeScale_w,
 		     1.0, 1.0, 0.0,
 		     (WIDTH - 120) * reshapeScale_w,
@@ -168,17 +216,15 @@ void ACF_DisplayText(float reshapeScale_w,
 			   25  * reshapeScale_w);
     }
 
-
-  ACSD_Acquire_Lock();
-  sprintf(points_display_A, "Team A: %d", ACSD_Shared.TeamA_Score);
-  sprintf(points_display_B, "%d :Team B", ACSD_Shared.TeamB_Score);
-  ACSD_Release_Lock();
+  //points display
+  sprintf(points_display_A, "Team A: %d", points);
+  sprintf(points_display_B, "%d :Team B", points);
   
   ACF_RenderText(&point_font_A,
 		 "FreeSerif",
 		 "Bold",
 		 70 * reshapeScale_w,
-		 1.0, 0.0, 0.0,
+		 0.0, 0.0, 1.0,
 		 (WIDTH - 50) * reshapeScale_w,
 		 100 * reshapeScale_h,
 		 points_display_A, 0,
@@ -193,7 +239,7 @@ void ACF_DisplayText(float reshapeScale_w,
 		 100 * reshapeScale_h,
 		 points_display_B, 0,
 		 windowWidth, windowHeight);
-
+  //if miss or score
   if(miss == 1 &&(gPatt_found_post1 || gPatt_found_post2))
     {
       ACF_RenderText(&score_font,
@@ -219,6 +265,76 @@ void ACF_DisplayText(float reshapeScale_w,
 		     windowWidth, windowHeight);
     }
 
+  //if targetted teammate
+  
+  if(gPatt_found_player2){
+    ACF_RenderText(&player_font,
+		     "Helvetica",
+		     "Bold",
+		     50 * reshapeScale_w,
+		     0.0, 0.0, 1.0,
+		     1200 * reshapeScale_w,
+		     280 * reshapeScale_h,
+		     "It's your TEAMMATE", 0,
+		     windowWidth, windowHeight);
+    if(keyboard_input != 'p'){
+       ACF_RenderText(&steal_font,
+		     "Helvetica",
+		     "Bold",
+		     50 * reshapeScale_w,
+		     1.0, 1.0, 0.0,
+		     1200 * reshapeScale_w,
+		     350 * reshapeScale_h,
+		     "PRESS p to PASS!!", 0,
+		     windowWidth, windowHeight);
+    }
+  }
+
+
+  
+  //if targetted opponent show opponent
+  if(gPatt_found_player3 || gPatt_found_player4){
+     ACF_RenderText(&player_font,
+		     "Helvetica",
+		     "Bold",
+		     50 * reshapeScale_w,
+		     1.0, 0.0, 0.0,
+		     1200 * reshapeScale_w,
+		     280 * reshapeScale_h,
+		     "It's your OPPONENT", 0,
+		     windowWidth, windowHeight);
+     if(keyboard_input != 't'){
+        ACF_RenderText(&steal_font,
+		     "Helvetica",
+		     "Bold",
+		     50 * reshapeScale_w,
+		     1.0, 1.0, 0.0,
+		     1200 * reshapeScale_w,
+		     350 * reshapeScale_h,
+		     "PRESS t to STEAL!!", 0,
+		     windowWidth, windowHeight);
+     }
+  }
+  
+  //timer display
+	
+  
+  timed = after.tv_sec-before.tv_sec + (after.tv_usec-before.tv_usec)/1000000.0;
+  min = timed/60;
+  sec = timed - min*60;
+  milsec = (int)((timed - min*60 -sec)*100);
+  sprintf(timer, "TIME: %02d:%02d:%02d", min, sec, milsec);
+  ACF_RenderText(&timer_font,
+		     "FreeSerif",
+		     "Bold",
+		     80 * reshapeScale_w,
+		     0.0, 1.0, 0.0,
+		     1200 * reshapeScale_w,
+		     100 * reshapeScale_h,
+		     timer, 0,
+		     windowWidth, windowHeight);
+
+  
   //help key display
   ACF_RenderText(&help_font,
 		 "Helvetica",
@@ -236,6 +352,7 @@ void ACF_DisplayText(float reshapeScale_w,
   glutSwapBuffers();
 }
 
+//draw goal post
 void ACF_DrawGoal(void)
 {
   GLUquadric *pQuad;
@@ -246,9 +363,6 @@ void ACF_DrawGoal(void)
   glTranslatef(0.0f, 1.0f, 0.5f);
   glutSolidTorus(0.1, 1.0, 10, 50);
 
-  glPopMatrix();
-
-  glPushMatrix();
   glColor3f(1,0,0);
   glScalef(40, 40, 40);
   glTranslatef(0.0f, 0.0f, 0.5f);
@@ -261,7 +375,7 @@ void ACF_DrawGoal(void)
 }
 
 void ACF_DrawCrosshair(float windowWidth, float windowHeight,
-		       int gPatt_found_post1, int gPatt_found_post2)
+		       int gPatt_found_post1, int gPatt_found_post2, int gPatt_found_player2, int gPatt_found_player3, int gPatt_found_player4)
 {
   glPushMatrix();
   glMatrixMode(GL_PROJECTION);
@@ -271,20 +385,26 @@ void ACF_DrawCrosshair(float windowWidth, float windowHeight,
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  if(gPatt_found_post1 || gPatt_found_post2)
+  //if found goal post or opponent
+  if(gPatt_found_post1 || gPatt_found_post2 || gPatt_found_player3 || gPatt_found_player4)
     {
       glColor3f(1.0, 0.0, 0.0);
     }
-  else
+  //if found teammate
+  else if(gPatt_found_player2)
     {
-      glColor3f(0.0, 1.0, 0.0);
+      glColor3f(0.0, 0.0, 1.0);
     }
+  else
+    glColor3f(0.0,1.0,0.0);
 
   glLineWidth(4.0);
 
   int crossHair[8] =
     {
+      //horizontal line
       windowWidth / 2 - 20, windowHeight/2, windowWidth/2 + 20, windowHeight/2,
+      //vertical line
       windowWidth/2, windowHeight/2 + 20, windowWidth/2, windowHeight/2 - 20 };
 
   glEnableClientState(GL_VERTEX_ARRAY);
@@ -296,6 +416,7 @@ void ACF_DrawCrosshair(float windowWidth, float windowHeight,
   glPopMatrix();
 }
 
+//draw scoring motion
 void ACF_DrawScore(float ball_size, float *ball_dis)
 {
   glPushMatrix();
@@ -313,6 +434,44 @@ void ACF_DrawScore(float ball_size, float *ball_dis)
   glutSolidSphere(0.7, 20, 20);
   glPopMatrix();
 
+}
+
+
+//draw passing motion
+void ACF_DrawPass(float ball_size, float *ball_dis_pass)
+{
+  glPushMatrix();
+  glColor3f(0.8, 0.8, 0);
+  glScalef(ball_size, ball_size, ball_size);
+  glTranslatef(0.0f, 0.0f, *ball_dis_pass);
+
+  *ball_dis_pass -= 1;
+
+  if(*ball_dis_pass <= -3){
+    glPopMatrix();
+    return;
+  }
+  glutSolidSphere(0.7, 20, 20);
+  glPopMatrix();
+}
+
+//drawing stealing motion
+
+void ACF_DrawSteal(float ball_size, float *ball_dis_steal)
+{
+  glPushMatrix();
+  glColor3f(0.8, 0.8, 0);
+  glScalef(ball_size, ball_size, ball_size);
+  glTranslatef(0.0f, 0.0f, *ball_dis_steal);
+
+  *ball_dis_steal += 2;
+
+  if(*ball_dis_steal >= 20){
+    glPopMatrix();
+    return;
+  }
+  glutSolidSphere(0.7, 20, 20);
+  glPopMatrix();
 }
 
 void ACF_DrawMiss(float ball_size, float *ball_dis, int *bounce)
@@ -355,6 +514,7 @@ void ACF_DrawBall(float ball_size, int *get)
   *get = 'y';
 }
 
+//draw 2d filled circle
 void ACF_DrawFilledCircle(float x, float y, float radius)
 {
   int i;
@@ -428,21 +588,23 @@ void ACF_PrintHelpKeys(float reshapeScale_w, float reshapeScale_h,
   char *helpText[] = {
 
     "Keys: \n",
+    " o          : Start the game.",
     " h          : Show/hide this help.",
     " q or [esc] : Quit program.",
-    " s          :  Shoot.",
-    " t          :  Tackle.",
+    " s          : Shoot.",
+    " t          : Tackle.",
+    " p          : Pass.",
     " g          :  Get the ball."
 
   };
 
 #define helpTextLineCount (sizeof(helpText)/sizeof(char *))
-  int help_font[6];
+  int help_font[helpTextLineCount-1];
 
   ACF_DrawBackground(650*reshapeScale_w,
-		     700*reshapeScale_h,
-		     850*reshapeScale_w,
-		     400*reshapeScale_h,
+		     800*reshapeScale_h,
+		     1050*reshapeScale_w,
+		     330*reshapeScale_h,
 		     windowWidth,
 		     windowHeight);
 
@@ -454,9 +616,8 @@ void ACF_PrintHelpKeys(float reshapeScale_w, float reshapeScale_h,
 		     "Bold",
 		     40*reshapeScale_w,
 		     1.0, 1.0, 1.0,
-		     (WIDTH-500)*reshapeScale_w,
-		     (500+100*i)*reshapeScale_h, helpText[i], 0,
+		     (WIDTH-300)*reshapeScale_w,
+		     (400+100*i)*reshapeScale_h, helpText[i], 0,
 		     windowWidth, windowHeight);
-
     }
 }

@@ -19,6 +19,12 @@
 #include <AR/ar.h>
 #include <AR/gsub_lite.h>
 
+struct ACS_InitBuf
+{
+  int MarkerID;
+  int magic;
+};
+
 int ACS_Network_Init(char *ACS_Hostname, int *ACS_Sockfd);
 int ACS_SetupMarker(const char *patt_gen1,
 		    const char *patt_gen2,
@@ -48,5 +54,6 @@ int ACS_SetupCamera(const char *cparam_name,
 		    ARParamLT **cparamLT_p,
 		    ARHandle **arhandle,
 		    AR3DHandle **ar3dhandle);
-		    
+
+static int ACS_Valid(struct ACS_InitBuf);
 #endif

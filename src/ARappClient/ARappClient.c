@@ -152,14 +152,18 @@ struct timeval before, after;
 static float reshapeScale_w = 1;
 static float reshapeScale_h = 1;
 
+static float key_duration = 0.0f;
+
+static int AC_Sockfd;
+
 int main(int argc, char **argv)
 {
-  int AC_Sockfd;
   pthread_t AC_Tid;
 
   char glutGamemode[32];
   char cparam_name[] = "camera_para.dat";
-  char vconf[] = "v4l2src device=/dev/video0 use-fixed-fps=false ! ffmpegcolorspace ! video/x-raw-rgb,bpp=24,framerate=30/1 ! identity name=artoolkit sync=true ! fakesink";
+  //  char vconf[] = "v4l2src device=/dev/video1 use-fixed-fps=false ! ffmpegcolorspace ! video/x-raw-rgb,bpp=24,framerate=30/1 ! identity name=artoolkit sync=true ! fakesink";
+  char vconf[] = "";
   char patt_name_gen1[] = "generator1.patt";
   char patt_name_gen2[] = "generator2.patt";
   char patt_name_gen3[] = "generator3.patt";
@@ -177,6 +181,7 @@ int main(int argc, char **argv)
       return AC_FALSE;
     }
 
+  ACSD_Init();
   // Initialization Step
   if(!ACS_Network_Init(argv[1], &AC_Sockfd))
     {
@@ -184,7 +189,6 @@ int main(int argc, char **argv)
       return AC_FALSE;
     }
 
-  ACSD_Init();
   glutInit(&argc, argv);
 
   // Video Setup
@@ -313,7 +317,7 @@ static void Display(void)
 {
   ARdouble p[16];
   ARdouble m[16];
-
+  int found = AC_FALSE;
   glDrawBuffer(GL_BACK);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -371,7 +375,8 @@ static void Display(void)
 	    }
 	  else
 	    {
-	      ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
+	      ACM_Shoot(1,AC_Sockfd);
+	      //ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
 	    }
 	}
     }
@@ -399,7 +404,8 @@ static void Display(void)
 	    }
 	  else
 	    {
-	      ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
+	      ACM_Shoot(2, AC_Sockfd);
+	      //ACF_DrawScore(ARC_Ball_Size, &ARC_Ball_Dis);
 	    }
 	}
     }
@@ -416,14 +422,23 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      if(keyboard_input == 'g')
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
+      ACSD_Release_Lock();
+
+      if(found)
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
+	  ACF_DrawCube(ARC_Ball_Size, &get);
 	}
+      if(keyboard_input == 'g')
+	{
+	  ACM_Get(1, AC_Sockfd);
+	}
+      found = AC_FALSE;
     }
 
   if (gPatt_found_gen2)
@@ -438,14 +453,23 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      if(keyboard_input == 'g')
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
+      ACSD_Release_Lock();
+
+      if(found)
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
+	  ACF_DrawCube(ARC_Ball_Size, &get);
 	}
+      if(keyboard_input == 'g')
+	{
+	  ACM_Get(2, AC_Sockfd);
+	}
+      found = AC_FALSE;
     }
 
   if (gPatt_found_gen3)
@@ -460,14 +484,23 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      if(keyboard_input == 'g')
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
+      ACSD_Release_Lock();
+
+      if(found)
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
+	  ACF_DrawCube(ARC_Ball_Size, &get);
 	}
+      if(keyboard_input == 'g')
+	{
+	  ACM_Get(3, AC_Sockfd);
+	}
+      found = AC_FALSE;
     }
 
   if (gPatt_found_gen4)
@@ -482,14 +515,135 @@ static void Display(void)
       glLoadMatrixd(m);
       #endif
 
-      if(keyboard_input == 'g')
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_GEN1]; 
+      ACSD_Release_Lock();
+
+      if(found)
 	{
 	  ACF_DrawBall(ARC_Ball_Size, &get);
 	}
       else
 	{
-	  ACF_DrawCube(gDrawRotateAngle, ARC_fSize);
+	  ACF_DrawCube(ARC_Ball_Size, &get);
 	}
+      if(keyboard_input == 'g')
+	{
+	  ACM_Get(4, AC_Sockfd);
+	}
+      found = AC_FALSE;
+    }
+
+   if (gPatt_found_player1)
+    {
+      arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player1,
+		       m,
+		       VIEW_SCALEFACTOR);
+
+      #ifdef ARDOUBLE_IS_FLOAT
+      glLoadMatrixf(m);
+      #else
+      glLoadMatrixd(m);
+      #endif
+
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_PLAYER1];
+      ACSD_Release_Lock();
+
+      if(found)
+	{
+	  ACF_DrawBall(ARC_Ball_Size, &get);
+	}
+
+      if(keyboard_input == 't')
+	{
+	  ACM_Tackle(1, ACS_Sockfd);
+	}
+      found = AC_FALSE;
+    }
+
+   if (gPatt_found_player2)
+    {
+      arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player2,
+		       m,
+		       VIEW_SCALEFACTOR);
+
+      #ifdef ARDOUBLE_IS_FLOAT
+      glLoadMatrixf(m);
+      #else
+      glLoadMatrixd(m);
+      #endif
+
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_PLAYER2];
+      ACSD_Release_Lock();
+
+      if(found)
+	{
+	  ACF_DrawBall(ARC_Ball_Size, &get);
+	}
+
+      if(keyboard_input == 't')
+	{
+	  ACM_Tackle(2, ACS_Sockfd);
+	}
+      found = AC_FALSE;
+    }
+
+   if (gPatt_found_player3)
+    {
+      arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player3,
+		       m,
+		       VIEW_SCALEFACTOR);
+
+      #ifdef ARDOUBLE_IS_FLOAT
+      glLoadMatrixf(m);
+      #else
+      glLoadMatrixd(m);
+      #endif
+
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_PLAYER3];
+      ACSD_Release_Lock();
+
+      if(found)
+	{
+	  ACF_DrawBall(ARC_Ball_Size, &get);
+	}
+
+      if(keyboard_input == 't')
+	{
+	  ACM_Tackle(3, ACS_Sockfd);
+	}
+      found = AC_FALSE;
+    }
+
+   if (gPatt_found_player4)
+    {
+      arglCameraViewRH((const ARdouble (*)[4]) gPatt_trans_player4,
+		       m,
+		       VIEW_SCALEFACTOR);
+
+      #ifdef ARDOUBLE_IS_FLOAT
+      glLoadMatrixf(m);
+      #else
+      glLoadMatrixd(m);
+      #endif
+
+      ACSD_Acquire_Lock();
+      found = ACSD_Shared.Ball_Holder[AC_PLAYER4];
+      ACSD_Release_Lock();
+
+      if(found)
+	{
+	  ACF_DrawBall(ARC_Ball_Size, &get);
+	}
+
+      if(keyboard_input == 't')
+	{
+	  ACM_Tackle(4, ACS_Sockfd);
+	}
+      found = AC_FALSE;
     }
 
   glDisable(GL_LIGHTING);
@@ -527,7 +681,13 @@ static void mainLoop(void)
   // Find out how long since mainLoop() last ran
   ms = glutGet(GLUT_ELAPSED_TIME);
   s_elapsed = (float)(ms - ms_prev) * 0.001f;
-  if(s_elapsed < 0.01f) return; //Don't update more often than 100 Hz
+  key_duration += (float)(ms - ms_prev) * 0.001f;
+  if(key_duration > 1.0f) //Once pressed Key is available for 1 second
+    {
+      key_duration = 0;
+      keyboard_input = ' ';
+    }
+  if(s_elapsed < 0.2f) return; //Don't update more often than 100 Hz
 
   ms_prev = ms;
 
@@ -833,10 +993,14 @@ static void mainLoop(void)
 
 static void Keyboard(unsigned char key, int x, int y)
 {
+  key_duration = 0.0f;
   switch(key)
     {
     case 'a':
       keyboard_input = 'a';
+      break;
+    case 't':
+      keyboard_input = 't';
       break;
     case 's':
       keyboard_input = 's';

@@ -29,6 +29,8 @@ struct ASM_Message
   uint8_t Ball_Holder[AS_NUM_OF_MARKER];
   enum ASM_Message_Type Message_Type;
   uint32_t Magic;
+  uint32_t TeamA_Score;
+  uint32_t TeamB_Score;
   uint8_t From;
   uint8_t To;
 };

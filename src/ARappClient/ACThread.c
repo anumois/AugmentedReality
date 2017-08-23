@@ -29,6 +29,7 @@ void *ACT_Socket_Thread(void *AC_Sockfd)
 
   printf("Client Initialized\n");
 
+  
   while(1)
     {
       if(recv(Sockfd,
@@ -44,6 +45,7 @@ void *ACT_Socket_Thread(void *AC_Sockfd)
 
       ACT_Process_Message(&Recv_Message);
     }
+  
 }
 
 void ACT_Process_Message(struct ACM_Message *Recv_Message)

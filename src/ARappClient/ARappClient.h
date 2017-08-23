@@ -25,4 +25,17 @@
 
 #define AIM_SIZE 30
 
+enum markerID
+  {
+    AC_PLAYER1,
+    AC_PLAYER2,
+    AC_PLAYER3,
+    AC_PLAYER4,
+    AC_GEN1,
+    AC_GEN2,
+    AC_GEN3,
+    AC_GEN4,
+    AC_GOAL1,
+    AC_GOAL2
+  };
 #endif

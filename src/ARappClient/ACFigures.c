@@ -10,6 +10,7 @@
 
 #include "ACFigures.h"
 #include "ARappClient.h"
+#include "ACSharedData.h"
 
 // For Drawing
 
@@ -20,8 +21,6 @@
 
 #include <stdio.h>
 #include <math.h>
-
-static int points = 0;
 
 void ACF_DrawCube(float gDrawRotateAngle, float fSize)
 {
@@ -170,8 +169,10 @@ void ACF_DisplayText(float reshapeScale_w,
     }
 
 
-  sprintf(points_display_A, "Team A: %d", points);
-  sprintf(points_display_B, "%d :Team B", points);
+  ACSD_Acquire_Lock();
+  sprintf(points_display_A, "Team A: %d", ACSD_Shared.TeamA_Score);
+  sprintf(points_display_B, "%d :Team B", ACSD_Shared.TeamB_Score);
+  ACSD_Release_Lock();
   
   ACF_RenderText(&point_font_A,
 		 "FreeSerif",

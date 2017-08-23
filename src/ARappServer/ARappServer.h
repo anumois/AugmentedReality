@@ -25,4 +25,20 @@
 #define AS_GOAL_B AS_NUM_OF_PLAYER + 5
 
 #define AS_MAGIC 0xBEEFBFFE
+
+enum markerID
+  {
+    AC_PLAYER1,
+    AC_PLAYER2,
+    AC_PLAYER3,
+    AC_PLAYER4,
+    AC_GEN1,
+    AC_GEN2,
+    AC_GEN3,
+    AC_GEN4,
+    AC_GOAL1,
+    AC_GOAL2
+  };
+    
+    
 #endif

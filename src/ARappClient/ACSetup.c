@@ -9,6 +9,8 @@
 
 #include "ARappClient.h"
 #include "ACSetup.h"
+#include "ACSharedData.h"
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +22,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+static int ACS_Valid(struct ACS_InitBuf ACS_IB);
 static void *get_in_addr(struct sockaddr *sa);
 
 // ACS_Network_Init
@@ -28,6 +31,7 @@ int ACS_Network_Init(char *ACS_Hostname, int *ACS_Sockfd)
 {
   struct addrinfo ACS_Hints;
   struct addrinfo *ACS_Servinfo, *ACS_Pointer;
+  struct ACS_InitBuf MarkerID;
   int ACS_rv;
   char ACS_String[INET6_ADDRSTRLEN];
   
@@ -81,6 +85,28 @@ int ACS_Network_Init(char *ACS_Hostname, int *ACS_Sockfd)
   printf("ACS_Network_Init: Connecting to %s\n", ACS_String);
 
   freeaddrinfo(ACS_Servinfo);
+
+  if(recv(*ACS_Sockfd,
+	  (uint8_t *)&MarkerID,
+	  sizeof(struct ACS_InitBuf),
+	  0) == -1)
+    {
+      fprintf(stderr,"ACS_Network_Init: Failed to receive MarkerID\n");
+      return AC_FALSE;
+    }
+
+  if(!ACS_Valid(MarkerID))
+    {
+      fprintf(stderr,"ACS_Network_Init: Invalid MAGIC");
+      return AC_FALSE;
+    }
+
+  ACSD_Acquire_Lock();
+  ACSD_Shared.Marker_ID = MarkerID.MarkerID;
+  printf("Debug: markerID = %d\n", MarkerID.MarkerID);
+  ACSD_Release_Lock();
+     
+	 
 
   return AC_TRUE;
 }
@@ -325,3 +351,9 @@ static void *get_in_addr(struct sockaddr *sa)
     : (void *) &(((struct sockaddr_in6 *) sa) -> sin6_addr);
 }
 
+static int ACS_Valid(struct ACS_InitBuf ACS_IB)
+{
+  if(ACS_IB.magic == AC_MAGIC)
+    return AC_TRUE;
+  return AC_FALSE;
+}

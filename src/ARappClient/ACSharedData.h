@@ -22,6 +22,7 @@ struct ACSD_Data
   uint32_t TeamB_Score;
   int AC_Sockfd;
   int ACSD_Lock;
+  int Marker_ID;
 };
 
 struct ACSD_Data ACSD_Shared;

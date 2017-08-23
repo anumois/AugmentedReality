@@ -64,14 +64,7 @@ int main(void)
   char ARAS_Addr_String[INET6_ADDRSTRLEN];
   
   //Network Initialization
-  /*
-  if(!ASsetup_Network_Init(&ARAS_Server_Sockfd))
-    {
-      fprintf(stderr,"Network Initialization failed\n");
-      return AS_FALSE;
-    }
-  */
-
+  
   memset(&ARAS_Hints, 0, sizeof(ARAS_Hints));
   ARAS_Hints.ai_family = AF_UNSPEC;
   ARAS_Hints.ai_socktype = SOCK_STREAM;
@@ -161,9 +154,21 @@ int main(void)
 		sizeof(ARAS_Addr_String));
       printf("server: got connection from %s\n", ARAS_Addr_String);
 
+      struct ARS_InitBuf MarkerID;
+      MarkerID.MarkerID = ARAS_Client_Count;
+      MarkerID.magic = AS_MAGIC;
+      if(send(ARAS_Client_Sockfd[ARAS_Client_Count],
+	      (uint8_t *)&MarkerID,
+	      sizeof(struct ARS_InitBuf),
+	      0) == -1)
+	{
+	  fprintf(stderr,"main: can't send markerid\n");
+	  continue;
+	}
+      
       //Child Process
       if(!(ARAS_PID = fork()))
-	{
+	{  		 	  
 	  close(ARAS_Server_Sockfd);
 	  ASCK_Server(ARAS_Client_Sockfd[ARAS_Client_Count]);
 	  break;

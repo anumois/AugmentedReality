@@ -40,4 +40,8 @@ int ACM_Pub_Message(enum ACM_Message_Type ACM_Type,
 		     int From,
 		     int To,
 		     int Sockfd);
+
+int ACM_Shoot(int Goal, int Sockfd);
+int ACM_Tackle(int Player_num, int Sockfd);
+int ACM_Get(int Gen_num, int Sockfd);
 #endif

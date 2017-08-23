@@ -143,7 +143,7 @@ This file holds functions that each forked child process runs. The child process
 
 ### Further Approach
 
-Using GPS module to recognize other drones and 
+Using GPS module to recognize other drones and symbols would be a great way to solve limitation 1. 
 
 
 Written by 2017 Summer undergraduate individual studies team

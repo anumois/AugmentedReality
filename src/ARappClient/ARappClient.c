@@ -432,7 +432,7 @@ static void Display(void)
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(ARC_Ball_Size, ARC_fSize);
 	}
       if(keyboard_input == 'g')
 	{
@@ -463,7 +463,7 @@ static void Display(void)
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(ARC_Ball_Size, ARC_fSize);
 	}
       if(keyboard_input == 'g')
 	{
@@ -494,7 +494,7 @@ static void Display(void)
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(ARC_Ball_Size, ARC_fSize);
 	}
       if(keyboard_input == 'g')
 	{
@@ -525,7 +525,7 @@ static void Display(void)
 	}
       else
 	{
-	  ACF_DrawCube(ARC_Ball_Size, &get);
+	  ACF_DrawCube(ARC_Ball_Size, ARC_fSize);
 	}
       if(keyboard_input == 'g')
 	{
@@ -557,7 +557,7 @@ static void Display(void)
 
       if(keyboard_input == 't')
 	{
-	  ACM_Tackle(1, ACS_Sockfd);
+	  ACM_Tackle(1, AC_Sockfd);
 	}
       found = AC_FALSE;
     }
@@ -585,7 +585,7 @@ static void Display(void)
 
       if(keyboard_input == 't')
 	{
-	  ACM_Tackle(2, ACS_Sockfd);
+	  ACM_Tackle(2, AC_Sockfd);
 	}
       found = AC_FALSE;
     }
@@ -613,7 +613,7 @@ static void Display(void)
 
       if(keyboard_input == 't')
 	{
-	  ACM_Tackle(3, ACS_Sockfd);
+	  ACM_Tackle(3, AC_Sockfd);
 	}
       found = AC_FALSE;
     }
@@ -641,7 +641,7 @@ static void Display(void)
 
       if(keyboard_input == 't')
 	{
-	  ACM_Tackle(4, ACS_Sockfd);
+	  ACM_Tackle(4, AC_Sockfd);
 	}
       found = AC_FALSE;
     }

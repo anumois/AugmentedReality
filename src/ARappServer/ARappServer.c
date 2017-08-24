@@ -157,6 +157,7 @@ int main(void)
       struct ARS_InitBuf MarkerID;
       MarkerID.MarkerID = ARAS_Client_Count;
       MarkerID.magic = AS_MAGIC;
+      
       if(send(ARAS_Client_Sockfd[ARAS_Client_Count],
 	      (uint8_t *)&MarkerID,
 	      sizeof(struct ARS_InitBuf),
